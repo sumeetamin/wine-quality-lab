@@ -1,28 +1,34 @@
 # Wine Quality Lab
 
-A reproducible baseline for classifying UCI Wine Quality ratings from physicochemical measurements. The task is treated as ordinal-label classification; the model reports class-aware metrics because quality scores are imbalanced.
+Predict ordered wine-quality labels and inspect class-wise errors; rare quality classes have very little holdout support.
 
 ## Dataset
 
-The script downloads UCI dataset 186 with the ucimlrepo package. See the [UCI Wine Quality dataset card](https://archive.ics.uci.edu/dataset/186/wine). No dataset copy is committed here.
+[UCI Wine Quality dataset](https://archive.ics.uci.edu/dataset/186/wine%2Bquality) (dataset ID 186), 6,497 records. The source is public and is fetched by the runner; the raw dataset is not committed.
 
 ## Run
 
 ```bash
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-# macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt
-python main.py
+python -m pip install -r requirements.txt
+python main.py --output-dir artifacts
 ```
 
-The first run needs network access to fetch the dataset. Use `python main.py --output-dir results` to choose another output directory.
+The runner saves `artifacts/metrics.json`, `artifacts/holdout_predictions.csv`, and `artifacts/model.joblib`. For SMS, the UCI CC BY 4.0 archive is downloaded to the ignored `data/` cache because the repository's importer does not currently expose that dataset. The raw messages are never written to the report.
 
-## Method and outputs
+## Holdout results
 
-- Fixed random 75/25 holdout (seed 42), stratified by quality label.
-- Median imputation, a 400-tree random forest classifier, and a majority-class dummy baseline.
-- Accuracy, balanced accuracy, macro/weighted F1, and per-class precision/recall/F1.
-- Writes `artifacts/metrics.json`, `artifacts/holdout_predictions.csv`, and `artifacts/model.joblib`.
+A stratified random 75/25 split (seed 42) is used. Numeric inputs are median-imputed; the random-forest classifier uses 400 trees and balanced subsampling. random 75/25 holdout; seed=42.
 
-This is a public-dataset benchmark, not a production wine-quality system. A single random split does not establish performance on new producers, vintages, or regions. No performance result is claimed until the script has been run and independently checked.
+| Accuracy | Balanced accuracy | Macro F1 | Weighted F1 | Majority baseline accuracy |
+|---:|---:|---:|---:|---:|
+| 0.679 | 0.374 | 0.405 | 0.671 | 0.436 |
+
+Full aggregate metrics and the exact split seed are in [`reports/benchmark.json`](reports/benchmark.json).
+
+## Limits
+
+Quality is ordinal and highly imbalanced. The low macro F1 and poor recall on rare labels are visible limitations; aggregate accuracy should not be read as reliable performance across all quality classes. These are one-time benchmark results, not service-level, production, or causal claims.
+
+## Reproducibility
+
+The model and split use seed 42. Re-running downloads source data from UCI and regenerates local artifacts. Model binaries, raw inputs, and row-level predictions are excluded from this public repository.
